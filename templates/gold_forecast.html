@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>تنبؤ أسعار الذهب (بالدولار)</title>
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1><i class="fas fa-chart-line"></i> تنبؤ أسعار الذهب</h1>
+      <p class="subtitle">الأسعار معروضة بالدولار للأونصة</p>
+    </header>
+
+    <section class="filter">
+      <form id="filter-form">
+        <div class="dates">
+          <div>
+            <label><i class="far fa-calendar-alt"></i> بداية:</label>
+            <input type="date" id="start-date" name="start_date">
+          </div>
+          <div>
+            <label><i class="far fa-calendar-alt"></i> نهاية:</label>
+            <input type="date" id="end-date" name="end_date">
+          </div>
+        </div>
+        <div class="presets">
+          <button type="button" class="preset active" data-days="7">أسبوع</button>
+          <button type="button" class="preset" data-days="15">أسبوعين</button>
+          <button type="button" class="preset" data-days="30">شهر</button>
+          <button type="button" class="preset" data-days="60">شهرين</button>
+          <button type="button" class="preset" data-days="90">3 أشهر</button>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn primary"><i class="fas fa-filter"></i> تطبيق</button>
+          <button type="button" class="btn secondary" onclick="resetFilter()">
+            <i class="fas fa-redo"></i> إعادة
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p>جاري جلب البيانات...</p>
+    </div>
+
+    <section id="results" class="results">
+      <div class="info-bar">
+        <div>آخر تحديث: <strong id="last-update">{{ last_update }}</strong></div>
+        <div>أيام: <strong id="days-count">{{ forecast|length }}</strong></div>
+        <div>نموذج: <strong>Prophet</strong></div>
+      </div>
+
+      <div id="chart-div" class="chart"></div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>السعر (USD$)</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          {% for d in forecast %}
+          <tr>
+            <td>{{ d.ds }}</td>
+            <td>{{ d.yhat|round(2) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="summary">
+        <div class="card">
+          <h3>متوسط السعر</h3>
+          <p id="avg-price">{{ avg_price }}$</p>
+        </div>
+        <div class="card">
+          <h3>أعلى سعر</h3>
+          <p id="max-price">{{ max_price }}$</p>
+          <small id="max-date">في {{ max_date }}</small>
+        </div>
+        <div class="card">
+          <h3>أدنى سعر</h3>
+          <p id="min-price">{{ min_price }}$</p>
+          <small id="min-date">في {{ min_date }}</small>
+        </div>
+      </div>
+
+      <div class="bottom-actions">
+        <a id="export-btn" class="btn primary" href="#"><i class="fas fa-download"></i> Excel</a>
+        <button class="btn primary" onclick="window.print()"><i class="fas fa-print"></i> طباعة</button>
+        <button class="btn secondary" onclick="location.reload()"><i class="fas fa-sync-alt"></i> تحديث</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
