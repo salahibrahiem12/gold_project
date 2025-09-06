@@ -200,15 +200,31 @@ def export_csv():
 def health_check():
     """Health check endpoint for monitoring"""
     try:
+        # Simple health check - just return OK if the app is running
+        return jsonify({
+            "status": "healthy",
+            "message": "Gold Forecast App is running",
+            "timestamp": datetime.now().isoformat(),
+            "version": "1.0.0"
+        })
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return jsonify({"status": "unhealthy", "error": str(e)}), 500
+
+@app.route('/health/detailed')
+def detailed_health_check():
+    """Detailed health check endpoint for monitoring"""
+    try:
         fc = fetch_and_train_model()
         return jsonify({
             "status": "healthy",
             "last_update": _LAST_UPDATE.isoformat() if _LAST_UPDATE else None,
             "forecast_count": len(fc) if fc is not None else 0,
-            "cache_age_hours": (datetime.now() - _LAST_UPDATE).total_seconds() / 3600 if _LAST_UPDATE else None
+            "cache_age_hours": (datetime.now() - _LAST_UPDATE).total_seconds() / 3600 if _LAST_UPDATE else None,
+            "timestamp": datetime.now().isoformat()
         })
     except Exception as e:
-        logger.error(f"Health check failed: {e}")
+        logger.error(f"Detailed health check failed: {e}")
         return jsonify({"status": "unhealthy", "error": str(e)}), 500
 
 if __name__ == '__main__':
@@ -217,4 +233,7 @@ if __name__ == '__main__':
     os.makedirs('static/js', exist_ok=True)
 
     fetch_and_train_model()  # تهيئة أولية
-    app.run(debug=app_config.DEBUG, port=app_config.PORT)
+    
+    # Get port from environment variable (Railway requirement)
+    port = int(os.getenv('PORT', app_config.PORT))
+    app.run(debug=app_config.DEBUG, host='0.0.0.0', port=port)
