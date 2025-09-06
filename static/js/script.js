@@ -13,7 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const maxDate   = document.getElementById('max-date');
   const minDate   = document.getElementById('min-date');
   const chartDiv  = document.getElementById('chart-div');
-  const exportBtn = document.getElementById('export-btn');
+  const exportExcelBtn = document.getElementById('export-excel-btn');
+  const exportCsvBtn = document.getElementById('export-csv-btn');
 
   function spinOn() {
     loading.style.display = 'flex';
@@ -44,6 +45,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   form.addEventListener('submit', e => {
     e.preventDefault();
+    
+    // Validate dates
+    if (!sd.value || !ed.value) {
+      showError('يرجى تحديد تاريخ البداية والنهاية');
+      return;
+    }
+    
+    const startDate = new Date(sd.value);
+    const endDate = new Date(ed.value);
+    
+    if (startDate >= endDate) {
+      showError('تاريخ البداية يجب أن يكون قبل تاريخ النهاية');
+      return;
+    }
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (startDate < today) {
+      showError('تاريخ البداية يجب أن يكون اليوم أو بعده');
+      return;
+    }
+    
     presets.forEach(b=>b.classList.remove('active'));
     spinOn();
     fetchData();
@@ -54,17 +78,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const start = sd.value, end = ed.value;
     try {
       const res = await fetch(`/api/forecast?start_date=${start}&end_date=${end}`);
-      const json= await res.json();
+      const json = await res.json();
+      
+      if (json.status === 'error') {
+        showError(json.message || 'حدث خطأ في جلب البيانات.');
+        return;
+      }
+      
       renderTable(json.data);
       renderSummary(json.summary);
       renderChart(json.data);
-      exportBtn.href = `/export-excel?start_date=${start}&end_date=${end}`;
+      exportExcelBtn.href = `/export-excel?start_date=${start}&end_date=${end}`;
+      exportCsvBtn.href = `/export-csv?start_date=${start}&end_date=${end}`;
     } catch (e) {
-      alert('حدث خطأ في جلب البيانات.');
-      tableBody.innerHTML = `<tr><td colspan="2">لا توجد بيانات</td></tr>`;
+      console.error('Fetch error:', e);
+      showError('حدث خطأ في الاتصال بالخادم.');
     } finally {
       spinOff();
     }
+  }
+
+  function showError(message) {
+    tableBody.innerHTML = `<tr><td colspan="2" style="color: red; text-align: center;">${message}</td></tr>`;
+    daysCount.textContent = '0';
+    // Clear summary
+    avgPrice.textContent = '0.00$';
+    maxPrice.textContent = '0.00$';
+    minPrice.textContent = '0.00$';
+    maxDate.textContent = '';
+    minDate.textContent = '';
+    // Clear chart
+    chartDiv.innerHTML = '<p style="text-align: center; color: red;">لا يمكن عرض الرسم البياني</p>';
   }
 
   function renderTable(data) {
